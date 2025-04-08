@@ -1,11 +1,10 @@
-# ファイル名: .github/workflows/continuous-delivery.yml
 name: Continuous Delivery
 
 on:
   push:
     branches:
-      - main  # メインブランチへのプッシュ時に実行
-  workflow_dispatch:  # 手動トリガーも可能に設定
+      - main
+  workflow_dispatch:
     inputs:
       environment:
         description: 'デプロイ環境 (preview/production)'
@@ -29,8 +28,6 @@ jobs:
   eas-build-and-submit:
     name: EAS Build and Submit
     runs-on: ubuntu-latest
-    # CIジョブが成功した場合のみ実行（オプション）
-    # needs: build
     
     steps:
       - name: Checkout repository
@@ -41,7 +38,7 @@ jobs:
         with:
           version: 8.6.0
           
-      - name: Setup Node.js with modern caching
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20.0.0
@@ -51,50 +48,41 @@ jobs:
       - name: Install dependencies
         run: pnpm install
         
-      # 重要: 個別にEAS CLIをインストールするのではなく、Expoの公式アクションを使用
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          expo-version: latest # Expoのバージョンも指定すると良い
-          token: ${{ secrets.EXPO_TOKEN }}
+      # EAS CLIを直接インストール
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+        
+      # EASの認証ファイルを直接作成
+      - name: Setup EAS credentials
+        run: |
+          mkdir -p ~/.eas
+          echo '{"auth": {"tokens": {"access": "${{ secrets.EXPO_TOKEN }}"}}}' > ~/.eas/auth.json
+          # 認証ファイルの内容確認（デバッグ用）
+          cat ~/.eas/auth.json | sed 's/"access": ".*"/"access": "[REDACTED]"/'
           
-      # 認証確認ステップ（デバッグ用）
+      # 認証確認
       - name: Verify EAS authentication
         run: eas whoami
-          
-      # 以下、必要なセットアップ手順
-      - name: 🔐 Decode Android Keystore
+        
+      # 以下、ビルドと配布のステップ
+      - name: Create Android keystore
         if: ${{ github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
-        id: decode_keystore
-        uses: timheuer/base64-to-file@v1.2
-        with:
-          fileName: keystore.jks
-          fileDir: ./android/app
-          encodedString: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
           
-      - name: 🔐 Create Google Service Account JSON
+      - name: Create Google Service Account JSON
         if: ${{ github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
         run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > google-service-account.json
         
-      - name: 🛠️ Create .env file
+      - name: Create .env file
         run: |
           echo "API_URL=${{ secrets.API_URL }}" >> .env
           echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}" >> .env
-          # その他必要な環境変数を追加
           
-      - name: 🚀 Build and submit - Android (Preview)
+      - name: Build and submit - Android (Preview)
         if: ${{ (github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform) && (github.event.inputs.environment == 'preview' || !github.event.inputs.environment) }}
         run: eas build --platform android --profile preview --non-interactive --auto-submit
         
-      - name: 🚀 Build and submit - iOS (Preview)
+      - name: Build and submit - iOS (Preview)
         if: ${{ (github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all' || !github.event.inputs.platform) && (github.event.inputs.environment == 'preview' || !github.event.inputs.environment) }}
         run: eas build --platform ios --profile preview --non-interactive --auto-submit
-        
-      - name: 🚀 Build and submit - Android (Production)
-        if: ${{ (github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all') && github.event.inputs.environment == 'production' }}
-        run: eas build --platform android --profile production --non-interactive --auto-submit
-        
-      - name: 🚀 Build and submit - iOS (Production)
-        if: ${{ (github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all') && github.event.inputs.environment == 'production' }}
-        run: eas build --platform ios --profile production --non-interactive --auto-submit
