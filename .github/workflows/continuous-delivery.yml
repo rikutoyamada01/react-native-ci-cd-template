@@ -29,6 +29,8 @@ jobs:
   eas-build-and-submit:
     name: EAS Build and Submit
     runs-on: ubuntu-latest
+    # CIジョブが成功した場合のみ実行（オプション）
+    # needs: build
     
     steps:
       - name: Checkout repository
@@ -39,24 +41,29 @@ jobs:
         with:
           version: 8.6.0
           
-      - name: Setup Node.js
+      - name: Setup Node.js with modern caching
         uses: actions/setup-node@v4
         with:
           node-version: 20.0.0
           cache: "pnpm"
+          cache-dependency-path: "pnpm-lock.yaml"
           
       - name: Install dependencies
         run: pnpm install
         
-      - name: Setup EAS
-        run: pnpm add -g eas-cli
-        
-      - name: 📱 Setup Expo and EAS
+      # 重要: 個別にEAS CLIをインストールするのではなく、Expoの公式アクションを使用
+      - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
+          expo-version: latest # Expoのバージョンも指定すると良い
           token: ${{ secrets.EXPO_TOKEN }}
           
+      # 認証確認ステップ（デバッグ用）
+      - name: Verify EAS authentication
+        run: eas whoami
+          
+      # 以下、必要なセットアップ手順
       - name: 🔐 Decode Android Keystore
         if: ${{ github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
         id: decode_keystore
@@ -80,6 +87,14 @@ jobs:
         if: ${{ (github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform) && (github.event.inputs.environment == 'preview' || !github.event.inputs.environment) }}
         run: eas build --platform android --profile preview --non-interactive --auto-submit
         
+      - name: 🚀 Build and submit - iOS (Preview)
+        if: ${{ (github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all' || !github.event.inputs.platform) && (github.event.inputs.environment == 'preview' || !github.event.inputs.environment) }}
+        run: eas build --platform ios --profile preview --non-interactive --auto-submit
+        
       - name: 🚀 Build and submit - Android (Production)
         if: ${{ (github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all') && github.event.inputs.environment == 'production' }}
         run: eas build --platform android --profile production --non-interactive --auto-submit
+        
+      - name: 🚀 Build and submit - iOS (Production)
+        if: ${{ (github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all') && github.event.inputs.environment == 'production' }}
+        run: eas build --platform ios --profile production --non-interactive --auto-submit
