@@ -30,7 +30,7 @@ jobs:
         run: pnpm run lint
 
       - name: Format
-        run: pnpm run format
+        run: pnpm run format:fix
 
       - name: Typecheck
         run: pnpm run typecheck
