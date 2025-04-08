@@ -26,6 +26,6 @@
     ".prettierrc.mjs",
     "babel.config.cjs",
     "metro.config.js"
-  ],
+, "eslint.config.mjs"  ],
   "exclude": ["node_modules", "jest.config.js"]
 }
