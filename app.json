@@ -24,6 +24,12 @@
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bf0083a0-dcf0-476b-8e22-df3cca5ab12e"
+      }
+    },
+    "owner": "rikutoyamada"
   }
 }

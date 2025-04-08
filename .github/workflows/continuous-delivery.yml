@@ -1,0 +1,85 @@
+# ファイル名: .github/workflows/continuous-delivery.yml
+name: Continuous Delivery
+
+on:
+  push:
+    branches:
+      - main  # メインブランチへのプッシュ時に実行
+  workflow_dispatch:  # 手動トリガーも可能に設定
+    inputs:
+      environment:
+        description: 'デプロイ環境 (preview/production)'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+      platform:
+        description: 'ビルドプラットフォーム (ios/android/all)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - ios
+          - android
+          - all
+
+jobs:
+  eas-build-and-submit:
+    name: EAS Build and Submit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8.6.0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.0.0
+          cache: "pnpm"
+          
+      - name: Install dependencies
+        run: pnpm install
+        
+      - name: Setup EAS
+        run: pnpm add -g eas-cli
+        
+      - name: 📱 Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          
+      - name: 🔐 Decode Android Keystore
+        if: ${{ github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
+        id: decode_keystore
+        uses: timheuer/base64-to-file@v1.2
+        with:
+          fileName: keystore.jks
+          fileDir: ./android/app
+          encodedString: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          
+      - name: 🔐 Create Google Service Account JSON
+        if: ${{ github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
+        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > google-service-account.json
+        
+      - name: 🛠️ Create .env file
+        run: |
+          echo "API_URL=${{ secrets.API_URL }}" >> .env
+          echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}" >> .env
+          # その他必要な環境変数を追加
+          
+      - name: 🚀 Build and submit - Android (Preview)
+        if: ${{ (github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform) && (github.event.inputs.environment == 'preview' || !github.event.inputs.environment) }}
+        run: eas build --platform android --profile preview --non-interactive --auto-submit
+        
+      - name: 🚀 Build and submit - Android (Production)
+        if: ${{ (github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all') && github.event.inputs.environment == 'production' }}
+        run: eas build --platform android --profile production --non-interactive --auto-submit
