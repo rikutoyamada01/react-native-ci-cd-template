@@ -1,5 +1,5 @@
-name: Continuous Delivery
-
+# File: .github/workflows/eas-build-firebase-distribution.yml
+name: EAS Build and Firebase Distribution
 on:
   push:
     branches:
@@ -25,69 +25,124 @@ on:
           - all
 
 jobs:
-  eas-build-and-submit:
-    name: EAS Build and Submit
+  eas-build-and-distribute:
+    name: EAS Build and Firebase Distribution
     runs-on: ubuntu-latest
-    
+   
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8.6.0
-          
+       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20.0.0
-          cache: "pnpm"
-          cache-dependency-path: "pnpm-lock.yaml"
-          
+          cache: "npm"
+         
       - name: Install dependencies
-        run: pnpm install
-        
-      # EAS CLIを直接インストール
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-        
-      # EASの認証ファイルを直接作成
-      - name: Setup EAS credentials
-        run: |
-          mkdir -p ~/.eas
-          TOKEN="${{ secrets.EXPO_TOKEN }}"
-          echo "{\"auth\": {\"tokens\": {\"access\": \"$TOKEN\"}}}" > ~/.eas/auth.json
-          node --version
-          pnpm --version
-          eas --version
-          ls -la ~/.eas
-          # 認証ファイルの内容確認（デバッグ用）
-          cat ~/.eas/auth.json | sed 's/"access": ".*"/"access": "[REDACTED]"/'
-          
+        run: npm ci
+       
+      # Firebase CLIのインストール
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+       
+      # 公式のExpo GitHub Actionを使用して認証を簡単に
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+       
       # 認証確認
       - name: Verify EAS authentication
         run: eas whoami
-        
-      # 以下、ビルドと配布のステップ
+       
+      # Android関連の設定ファイル作成
       - name: Create Android keystore
         if: ${{ github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
-          
-      - name: Create Google Service Account JSON
+         
+      - name: Create Google Service Account JSON for EAS
         if: ${{ github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
         run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > google-service-account.json
-        
+      
+      # Firebase用のサービスアカウントファイル作成
+      - name: Create Firebase Service Account JSON
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > firebase-service-account.json
+       
+      # 環境変数ファイル作成
       - name: Create .env file
         run: |
           echo "API_URL=${{ secrets.API_URL }}" >> .env
           echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}" >> .env
+      
+      # Android用のビルドと配布
+      - name: Build Android and distribute to Firebase
+        if: ${{ github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
+        run: |
+          # ダウンロード可能なURLを取得するためにJSONで出力
+          BUILD_INFO=$(eas build --platform android --profile preview --non-interactive --json)
+          echo "Android build info: $BUILD_INFO"
           
-      - name: Build and submit - Android (Preview)
-        if: ${{ (github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || !github.event.inputs.platform) && (github.event.inputs.environment == 'preview' || !github.event.inputs.environment) }}
-        run: eas build --platform android --profile preview --non-interactive --auto-submit
-        
-      - name: Build and submit - iOS (Preview)
-        if: ${{ (github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all' || !github.event.inputs.platform) && (github.event.inputs.environment == 'preview' || !github.event.inputs.environment) }}
-        run: eas build --platform ios --profile preview --non-interactive --auto-submit
+          # ビルドIDとアーティファクトURLを抽出
+          BUILD_ID=$(echo $BUILD_INFO | jq -r '.id')
+          ARTIFACT_URL=$(echo $BUILD_INFO | jq -r '.artifacts.buildUrl')
+          
+          echo "Build ID: $BUILD_ID"
+          echo "Artifact URL: $ARTIFACT_URL"
+          
+          # ビルドの完了を待つ
+          echo "Waiting for Android build to complete..."
+          eas build:show $BUILD_ID --json > android-build-result.json
+          
+          # ビルド結果からダウンロードURLを取得
+          DOWNLOAD_URL=$(cat android-build-result.json | jq -r '.artifacts.buildUrl')
+          echo "Download URL: $DOWNLOAD_URL"
+          
+          # APKをダウンロード
+          echo "Downloading Android build..."
+          curl -L $DOWNLOAD_URL -o app-release.aab
+          
+          # Firebase App Distributionにデプロイ
+          echo "Distributing Android build to Firebase App Distribution..."
+          firebase appdistribution:distribute app-release.aab \
+            --app ${{ secrets.FIREBASE_ANDROID_APP_ID }} \
+            --groups "testers" \
+            --release-notes "Automated build from GitHub Actions" \
+            --token "${{ secrets.FIREBASE_TOKEN }}"
+      
+      # iOS用のビルドと配布
+      - name: Build iOS and distribute to Firebase
+        if: ${{ github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all' || !github.event.inputs.platform }}
+        run: |
+          # ダウンロード可能なURLを取得するためにJSONで出力
+          BUILD_INFO=$(eas build --platform ios --profile preview --non-interactive --json)
+          echo "iOS build info: $BUILD_INFO"
+          
+          # ビルドIDとアーティファクトURLを抽出
+          BUILD_ID=$(echo $BUILD_INFO | jq -r '.id')
+          ARTIFACT_URL=$(echo $BUILD_INFO | jq -r '.artifacts.buildUrl')
+          
+          echo "Build ID: $BUILD_ID"
+          echo "Artifact URL: $ARTIFACT_URL"
+          
+          # ビルドの完了を待つ
+          echo "Waiting for iOS build to complete..."
+          eas build:show $BUILD_ID --json > ios-build-result.json
+          
+          # ビルド結果からダウンロードURLを取得
+          DOWNLOAD_URL=$(cat ios-build-result.json | jq -r '.artifacts.buildUrl')
+          echo "Download URL: $DOWNLOAD_URL"
+          
+          # IPAをダウンロード
+          echo "Downloading iOS build..."
+          curl -L $DOWNLOAD_URL -o app-release.ipa
+          
+          # Firebase App Distributionにデプロイ
+          echo "Distributing iOS build to Firebase App Distribution..."
+          firebase appdistribution:distribute app-release.ipa \
+            --app ${{ secrets.FIREBASE_IOS_APP_ID }} \
+            --groups "testers" \
+            --release-notes "Automated build from GitHub Actions" \
+            --token "${{ secrets.FIREBASE_TOKEN }}"
