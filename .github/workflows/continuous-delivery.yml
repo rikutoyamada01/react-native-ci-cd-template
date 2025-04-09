@@ -56,7 +56,8 @@ jobs:
       - name: Setup EAS credentials
         run: |
           mkdir -p ~/.eas
-          echo '{"auth": {"tokens": {"access": "${{ secrets.EXPO_TOKEN }}"}}}' > ~/.eas/auth.json
+          TOKEN="${{ secrets.EXPO_TOKEN }}"
+          echo "{\"auth\": {\"tokens\": {\"access\": \"$TOKEN\"}}}" > ~/.eas/auth.json
           node --version
           pnpm --version
           eas --version
