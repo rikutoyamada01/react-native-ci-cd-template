@@ -57,6 +57,10 @@ jobs:
         run: |
           mkdir -p ~/.eas
           echo '{"auth": {"tokens": {"access": "${{ secrets.EXPO_TOKEN }}"}}}' > ~/.eas/auth.json
+          node --version
+          pnpm --version
+          eas --version
+          ls -la ~/.eas
           # 認証ファイルの内容確認（デバッグ用）
           cat ~/.eas/auth.json | sed 's/"access": ".*"/"access": "[REDACTED]"/'
           
