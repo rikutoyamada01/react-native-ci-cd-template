@@ -1,77 +1,18 @@
 {
-    "cli": {
-      "version": ">= 5.2.0",
-      "requireCommit": true
+  "cli": {
+  "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
     },
-    "build": {
-      "development": {
-        "developmentClient": true,
-        "distribution": "internal",
-        "ios": {
-          "resourceClass": "m-medium"
-        }
-      },
-      "preview": {
-        "distribution": "internal",
-        "ios": {
-          "resourceClass": "m-medium",
-          "simulator": true
-        },
-        "android": {
-          "buildType": "apk"
-        },
-        "env": {
-          "APP_ENV": "staging",
-          "FIREBASE_APP_ID_ANDROID": "1:123456789:android:abcdef1234567890",
-          "FIREBASE_APP_ID_IOS": "1:123456789:ios:abcdef1234567890"
-        },
-        "hooks": {
-            "postBuild": "./eas-hooks/after-build.js"
-        }
-      },
-      "preview-store": {
-        "distribution": "store",
-        "ios": {
-          "resourceClass": "m-medium"
-        },
-        "env": {
-          "APP_ENV": "staging"
-        }
-      },
-      "production": {
-        "autoIncrement": true,
-        "distribution": "store",
-        "ios": {
-          "resourceClass": "m-medium"
-        },
-        "env": {
-          "APP_ENV": "production"
-        }
-      }
-    },
-    "submit": {
-      "production": {
-        "ios": {
-          "appleId": "your-apple-id@example.com",
-          "ascAppId": "1234567890",
-          "appleTeamId": "ABC123XYZ"
-        },
-        "android": {
-          "serviceAccountKeyPath": "./google-service-account.json",
-          "track": "production"
-        }
-      },
-      "preview": {
-        "ios": {
-          "appleId": "your-apple-id@example.com",
-          "ascAppId": "1234567890",
-          "appleTeamId": "ABC123XYZ",
-          "iosDistributionType": "internal"
-        },
-        "android": {
-          "serviceAccountKeyPath": "./google-service-account.json",
-          "track": "internal"
-        }
+    "development-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
       }
     }
   }
+}

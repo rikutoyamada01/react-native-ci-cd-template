@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "react-native-expo-tutorial",
-    "slug": "react-native-expo-tutorial",
+    "slug": "react-native-ci-cd-template",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
@@ -27,7 +27,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "bf0083a0-dcf0-476b-8e22-df3cca5ab12e"
+        "projectId": "ac4c6214-e70e-4f57-a941-1546754621a1"
       }
     },
     "owner": "rikutoyamada"
