@@ -21,17 +21,18 @@ jobs:
           node-version: '16'
       - name: Install EAS CLI
         run: npm install -g eas-cli
-      - name: Authenticate with EAS
-        run: eas login
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        
       - name: Build with EAS
         run: eas build --platform android --profile preview --non-interactive --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       - name: Download APK from EAS Build
         run: |
           # Find the URL for the built APK
           APK_URL=$(eas build:status --platform android --json | jq -r '.artifacts[0].url')
           curl -o app-release.apk $APK_URL
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       - name: Upload artifact to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1.1.1
         with:
