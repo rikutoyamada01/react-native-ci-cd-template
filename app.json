@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "react-native-expo-tutorial",
+    "name": "react-native-ci-cd-template",
     "slug": "react-native-ci-cd-template",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,7 +20,7 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.reactnativeexpotutorial"
+      "package": "com.anonymous.reactnativecicdtemplate",
     },
     "web": {
       "favicon": "./src/assets/favicon.png"

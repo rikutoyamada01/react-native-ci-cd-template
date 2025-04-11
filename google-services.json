@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "225174835327",
+    "project_id": "ci-cd-template-5e5ed",
+    "storage_bucket": "ci-cd-template-5e5ed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225174835327:android:9c884fb29438bb725faf4a",
+        "android_client_info": {
+          "package_name": "com.anonymous.reactnativecicdtemplate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_cp6_Ioo2GePb7yA26UVlSNu_C7YRdAM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225174835327:android:8c623ca0d2a8c5c05faf4a",
+        "android_client_info": {
+          "package_name": "com.rikutoyamada.focus_wisp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_cp6_Ioo2GePb7yA26UVlSNu_C7YRdAM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
