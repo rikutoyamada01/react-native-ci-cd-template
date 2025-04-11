@@ -3,17 +3,13 @@
   "appVersionSource": "remote"
   },
   "build": {
-    "android": {
-      "devBuild": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
-      },
-      "previewBuild": {
+    "previewBuild": {
+      "android": {
         "buildType": "apk",
         "distribution": "internal",
         "workflow": "managed",
         "gradleCommand": ":app:assembleDebug"
       }
-    },
-  }
+    }
+  },
 }
