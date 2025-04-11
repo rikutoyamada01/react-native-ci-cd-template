@@ -4,11 +4,11 @@
   },
   "build": {
     "android": {
-      "development": {
+      "devBuild": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleDebug"
       },
-      "preview": {
+      "previewBuild": {
         "buildType": "apk",
         "distribution": "internal",
         "workflow": "managed",
